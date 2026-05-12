@@ -21,7 +21,7 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="text-gray-800 h-screen flex flex-col overflow-hidden">
+<body class="text-gray-800 h-[100dvh] flex flex-col overflow-hidden">
 
     <!-- Toast Notifications -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
@@ -42,7 +42,7 @@
         </nav>
 
         <!-- Dynamic Content Area -->
-        <main id="main-content" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative">
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-10 lg:p-8 lg:pb-12 relative">
             <!-- Loading Overlay -->
             <div id="loading-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm z-50 items-center justify-center rounded-xl">
                 <div class="loader"></div>
