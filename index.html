@@ -6,1139 +6,1083 @@
     <title>AksDiary - Finance Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        :root {
-            --bg-body: #f8fafc;
-            --text-main: #1e293b;
-        }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-body); 
-            color: var(--text-main); 
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* Premium Glass Cards */
-        .glass-card { 
-            background: #ffffff; 
-            border: 1px solid rgba(226, 232, 240, 0.8); 
-            box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.03), 0 0 3px rgba(0,0,0,0.02); 
-            transition: all 0.3s ease;
-        }
-        
-        .nav-glass {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid #f1f5f9;
-        }
-        
-        /* Custom Segmented Radio Buttons */
-        .radio-segment input:checked + div {
-            background-color: #ffffff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-            color: #0f172a;
-            font-weight: 600;
-            transform: scale(1.02);
-        }
-
-        /* Tabs Styling */
-        .tab-btn {
-            position: relative;
-            color: #64748b;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        .tab-btn:hover { color: #0f172a; }
-        .tab-btn.active {
-            color: #0f172a;
-            font-weight: 600;
-        }
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: #3b82f6;
-            border-radius: 3px 3px 0 0;
-        }
-
-        /* Animations */
-        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* Toast Notifications */
-        .toast-enter { animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .toast-leave { animation: slideOutRight 0.3s forwards; }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-
-        /* Description Truncate Utility */
-        .desc-expanded { white-space: normal !important; word-break: break-word; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .toast-enter { animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        /* Hide scrollbar for tabs */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .tab-btn.active { border-bottom: 2px solid #4f46e5; color: #4f46e5; font-weight: 600; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col">
+<body class="text-gray-800 h-screen flex flex-col overflow-hidden">
 
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-3 pointer-events-none"></div>
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
-    <div id="login-view" class="min-h-screen flex items-center justify-center p-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-50">
-        <div class="glass-card rounded-3xl p-8 w-full max-w-md shadow-2xl fade-in relative overflow-hidden">
-            <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
-            <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl"></div>
-            
-            <div class="text-center mb-10 relative z-10">
-                <div class="w-20 h-20 bg-gradient-to-tr from-slate-700 to-slate-800 text-white rounded-2xl flex items-center justify-center mx-auto mb-5 text-3xl shadow-xl shadow-slate-900/10">
-                    <i class="fas fa-book-wallet"></i>
-                </div>
-                <h1 class="text-3xl font-bold text-slate-800 tracking-tight">AksDiary</h1>
-                <p class="text-slate-500 text-sm mt-2 font-medium">Smart Financial Tracking</p>
-            </div>
-            
-            <div class="space-y-5 relative z-10">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Username</label>
-                    <div class="relative">
-                        <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" id="auth-username" class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all font-medium text-slate-700" placeholder="Enter username">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
-                    <div class="relative">
-                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="password" id="auth-password" class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all font-medium text-slate-700" placeholder="••••••••">
-                    </div>
-                </div>
-                <div class="flex flex-col gap-3 pt-6">
-                    <button onclick="App.handleLogin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3.5 px-4 rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-                        Access Diary <i class="fas fa-arrow-right text-sm"></i>
-                    </button>
-                    <button onclick="App.handleRegister()" class="w-full bg-white border border-slate-200 hover:border-slate-400 text-slate-600 font-semibold py-3 px-4 rounded-xl transition-all">
-                        Create Account
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="app-wrapper" class="hidden flex-1 flex flex-col">
+    <!-- Main App Layout -->
+    <div id="app-layout" class="flex-1 h-full flex flex-col">
         <!-- Navbar -->
-        <nav class="nav-glass sticky top-0 z-40 shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center cursor-pointer group" onclick="App.switchView('home')">
-                        <div class="w-10 h-10 bg-slate-800 text-white rounded-xl flex items-center justify-center mr-3 shadow-md group-hover:scale-105 transition-transform">
-                            <i class="fas fa-book-wallet"></i>
-                        </div>
-                        <span class="font-bold text-xl text-slate-800 tracking-tight">AksDiary</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="hidden sm:flex items-center gap-2 bg-slate-100/80 px-4 py-2 rounded-full border border-slate-200">
-                            <div class="w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-semibold uppercase" id="nav-avatar">A</div>
-                            <span id="nav-username" class="text-sm font-semibold text-slate-700"></span>
-                        </div>
-                        <button onclick="App.logout()" class="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors" title="Logout">
-                            <i class="fas fa-power-off text-lg"></i>
-                        </button>
-                    </div>
+        <nav class="glass-panel sticky top-0 z-30 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-wallet text-indigo-600 text-xl"></i>
+                    <span class="text-xl font-semibold text-gray-900 tracking-tight">AksDiary</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="user-greeting" class="text-sm font-medium text-gray-600">Hello, Aks</span>
                 </div>
             </div>
         </nav>
 
-        <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-            
-            <section id="home-view" class="hidden fade-in">
-                <!-- Header -->
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Financial Overview</h2>
-                    <p class="text-slate-500 font-medium mt-1 text-sm">Your complete net worth and portfolio performance.</p>
-                </div>
+        <!-- Dynamic Content Area -->
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative">
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm z-50 items-center justify-center rounded-xl">
+                <div class="loader"></div>
+                <span class="ml-3 text-sm font-medium text-gray-600">Syncing...</span>
+            </div>
 
-                <!-- 1. Total Net Worth -->
-                <div class="glass-card rounded-3xl p-8 mb-8 text-center bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 text-white border-none shadow-xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
-                    <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
-                    <p class="text-slate-300 font-semibold mb-2 uppercase tracking-widest text-xs relative z-10 opacity-90"><i class="fas fa-globe-asia mr-2"></i>Total Net Worth</p>
-                    <h3 class="text-4xl sm:text-5xl font-bold tracking-tight relative z-10" id="home-total-net">₹0</h3>
-                </div>
-
-                <!-- 2. Combined 4-in-1 Comparison Graph -->
-                <div class="glass-card rounded-3xl p-6 lg:p-8 mb-8 shadow-sm">
-                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+            <!-- View: Dashboard (Home) -->
+            <div id="view-home" class="view-section max-w-7xl mx-auto space-y-6">
+                <!-- Total Net Worth Card -->
+                <div class="bg-gradient-to-r from-gray-900 to-indigo-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+                    <p class="text-indigo-200 text-sm font-medium mb-1">Total Net Worth</p>
+                    <h2 class="text-4xl font-semibold tracking-tight" id="total-net-worth">₹0</h2>
+                    
+                    <!-- Stats summary -->
+                    <div class="mt-6 grid grid-cols-2 gap-4 border-t border-white/20 pt-4">
                         <div>
-                            <h3 class="text-lg font-bold text-slate-800">Growth Comparison</h3>
-                            <p class="text-sm text-slate-500 font-medium">Track trajectory across all your assets.</p>
+                            <p class="text-xs text-indigo-200 mb-1">Total Inflows</p>
+                            <p class="text-green-400 font-medium" id="total-inflows">+ ₹0</p>
                         </div>
-                    </div>
-                    <div class="w-full h-[300px] relative">
-                        <canvas id="chart-home"></canvas>
+                        <div>
+                            <p class="text-xs text-indigo-200 mb-1">Total Outflows</p>
+                            <p class="text-red-400 font-medium" id="total-outflows">- ₹0</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 3. The 4 Category Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                <!-- 4-in-1 Combined Chart -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Overall Performance</h3>
+                    <div class="h-[250px] w-full">
+                        <canvas id="combinedChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Categories Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Bank -->
-                    <div onclick="App.switchView('generic', 'bank')" class="glass-card rounded-3xl p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-b-4 border-b-blue-500 group bg-gradient-to-b from-white to-blue-50/20">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-inner">
-                                <i class="fas fa-university text-xl"></i>
-                            </div>
-                            <div class="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                                <i class="fas fa-chevron-right text-xs"></i>
+                    <div onclick="App.switchView('bank')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-1 transition duration-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                                <i class="fas fa-building-columns"></i>
                             </div>
                         </div>
-                        <p class="text-sm font-semibold text-slate-500 mb-1">Bank Account</p>
-                        <h4 class="text-2xl font-bold text-slate-800 tracking-tight" id="card-bal-bank">₹0</h4>
+                        <h3 class="text-gray-500 text-sm font-medium">Bank Account</h3>
+                        <p class="text-2xl font-semibold text-gray-900 mt-1" id="card-bank-total">₹0</p>
                     </div>
-                    
-                    <!-- Pocket -->
-                    <div onclick="App.switchView('generic', 'pocket')" class="glass-card rounded-3xl p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-b-4 border-b-emerald-500 group bg-gradient-to-b from-white to-emerald-50/20">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-inner">
-                                <i class="fas fa-wallet text-xl"></i>
-                            </div>
-                            <div class="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                <i class="fas fa-chevron-right text-xs"></i>
+
+                    <!-- Personal Pocket -->
+                    <div onclick="App.switchView('personal_pocket')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-1 transition duration-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-green-100 text-green-600 flex items-center justify-center text-xl">
+                                <i class="fas fa-wallet"></i>
                             </div>
                         </div>
-                        <p class="text-sm font-semibold text-slate-500 mb-1">Pocket Wallet</p>
-                        <h4 class="text-2xl font-bold text-slate-800 tracking-tight" id="card-bal-pocket">₹0</h4>
+                        <h3 class="text-gray-500 text-sm font-medium">Personal Pocket</h3>
+                        <p class="text-2xl font-semibold text-gray-900 mt-1" id="card-pocket-total">₹0</p>
                     </div>
-                    
+
                     <!-- Piggy Bank -->
-                    <div onclick="App.switchView('generic', 'piggy')" class="glass-card rounded-3xl p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-b-4 border-b-pink-500 group bg-gradient-to-b from-white to-pink-50/20">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-inner">
-                                <i class="fas fa-piggy-bank text-xl"></i>
-                            </div>
-                            <div class="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-pink-500 transition-colors">
-                                <i class="fas fa-chevron-right text-xs"></i>
+                    <div onclick="App.switchView('piggy_bank')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-1 transition duration-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-xl">
+                                <i class="fas fa-piggy-bank"></i>
                             </div>
                         </div>
-                        <p class="text-sm font-semibold text-slate-500 mb-1">Cash Vault</p>
-                        <h4 class="text-2xl font-bold text-slate-800 tracking-tight" id="card-bal-piggy">₹0</h4>
+                        <h3 class="text-gray-500 text-sm font-medium">Cash Vault</h3>
+                        <p class="text-2xl font-semibold text-gray-900 mt-1" id="card-piggy-total">₹0</p>
                     </div>
 
                     <!-- Stock Market -->
-                    <div onclick="App.switchView('stock')" class="glass-card rounded-3xl p-6 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-b-4 border-b-indigo-500 group bg-gradient-to-b from-white to-indigo-50/20 flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start mb-6">
-                                <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-inner">
-                                    <i class="fas fa-chart-line text-xl"></i>
-                                </div>
-                                <div class="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-indigo-500 transition-colors">
-                                    <i class="fas fa-chevron-right text-xs"></i>
-                                </div>
+                    <div onclick="App.switchView('stock')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-1 transition duration-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl">
+                                <i class="fas fa-chart-line"></i>
                             </div>
-                            <p class="text-sm font-semibold text-slate-500 mb-1">Portfolio</p>
-                            <h4 class="text-2xl font-bold text-slate-800 tracking-tight" id="card-bal-stock">₹0</h4>
                         </div>
-                        <div class="mt-4 flex justify-between items-center text-[11px] font-semibold border-t border-indigo-100/50 pt-3">
-                            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="text-slate-500" id="card-share-stock">Sh: 0</span></div>
-                            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span><span class="text-slate-500" id="card-sip-stock">SIP: 0</span></div>
-                        </div>
+                        <h3 class="text-gray-500 text-sm font-medium">Stock Market</h3>
+                        <p class="text-2xl font-semibold text-gray-900 mt-1" id="card-stock-total">₹0</p>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <section id="generic-view" class="hidden fade-in">
-                <!-- Top Navigation -->
-                <button onclick="App.switchView('home')" class="mb-6 text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-2 transition-all group bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm w-fit hover:shadow-md text-sm">
-                    <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> Back to Dashboard
-                </button>
-                
+            <!-- View: Standard Category (Bank, Pocket, Piggy) -->
+            <div id="view-category" class="hidden view-section max-w-5xl mx-auto space-y-6">
                 <!-- Header -->
-                <div class="flex items-center gap-4 mb-8">
-                    <div id="generic-icon" class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow-md"></div>
+                <div class="flex items-center gap-4">
+                    <button onclick="App.switchView('home')" class="p-2 hover:bg-gray-200 rounded-full transition text-gray-600"><i class="fas fa-arrow-left"></i></button>
+                    <h2 class="text-2xl font-semibold text-gray-900 capitalize" id="cat-title">Category Name</h2>
+                </div>
+
+                <!-- Balance Card -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex justify-between items-center">
                     <div>
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight" id="generic-title">Category Name</h2>
-                        <p class="text-sm text-slate-500 font-medium mt-0.5" id="generic-subtitle">Manage your transactions</p>
+                        <p class="text-sm font-medium text-gray-500">Available Balance</p>
+                        <p class="text-3xl font-semibold text-gray-900 mt-1" id="cat-balance">₹0</p>
                     </div>
-                </div>
-
-                <!-- Tabs Navigation: Form First -->
-                <div class="flex space-x-6 mb-6 border-b border-slate-200 px-2 overflow-x-auto">
-                    <button class="tab-btn active pb-3 text-[15px] whitespace-nowrap" id="tab-generic-form" onclick="App.switchGenericTab('form')">
-                        <i class="fas fa-plus-circle mr-2"></i> New Entry
-                    </button>
-                    <button class="tab-btn pb-3 text-[15px] whitespace-nowrap" id="tab-generic-dash" onclick="App.switchGenericTab('dash')">
-                        <i class="fas fa-chart-pie mr-2"></i> Overview & Analytics
-                    </button>
-                </div>
-
-                <!-- Tab 1: Add Transaction Form -->
-                <div id="content-generic-form" class="fade-in">
-                    <div class="max-w-2xl mx-auto glass-card rounded-3xl p-6 lg:p-8 shadow-sm border-t-4" id="generic-form-border">
-                        <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-sm"><i class="fas fa-pen"></i></div>
-                            Record Transaction
-                        </h3>
-                        <div class="space-y-5">
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Date</label>
-                                <input type="date" id="generic-date" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-slate-700">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Transaction Type</label>
-                                <div class="flex bg-slate-100 p-1 rounded-xl">
-                                    <label class="flex-1 text-center radio-segment cursor-pointer relative">
-                                        <input type="radio" name="generic-type" value="in" class="sr-only" checked>
-                                        <div class="py-2.5 rounded-lg text-sm font-semibold text-slate-500 transition-all flex items-center justify-center gap-2">
-                                            <i class="fas fa-arrow-down text-emerald-500"></i> Money In
-                                        </div>
-                                    </label>
-                                    <label class="flex-1 text-center radio-segment cursor-pointer relative">
-                                        <input type="radio" name="generic-type" value="out" class="sr-only">
-                                        <div class="py-2.5 rounded-lg text-sm font-semibold text-slate-500 transition-all flex items-center justify-center gap-2">
-                                            <i class="fas fa-arrow-up text-red-500"></i> Money Out
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Amount (₹)</label>
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 font-medium">₹</span>
-                                    <input type="number" id="generic-amount" class="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-bold text-lg text-slate-800" placeholder="0.00">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
-                                <textarea id="generic-desc" rows="2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-slate-700 resize-none" placeholder="What was this for?"></textarea>
-                            </div>
-                            <div class="pt-2">
-                                <button onclick="App.saveGenericTransaction()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                                    Save Transaction
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab 2: Dashboard & History -->
-                <div id="content-generic-dash" class="hidden space-y-6 fade-in">
-                    <!-- Top Summary Cards -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                        <div class="glass-card rounded-3xl p-5 border-l-4 border-l-slate-700 relative overflow-hidden bg-white">
-                            <div class="absolute right-0 top-0 mt-4 mr-4 text-slate-50 text-4xl"><i class="fas fa-wallet"></i></div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1 relative z-10">Net Balance</p>
-                            <h4 class="text-3xl font-bold text-slate-800 relative z-10" id="gen-dash-bal">₹0</h4>
-                        </div>
-                        <div class="glass-card rounded-3xl p-5 border-l-4 border-l-emerald-500 relative overflow-hidden bg-white">
-                            <div class="absolute right-0 top-0 mt-4 mr-4 text-emerald-50 text-4xl"><i class="fas fa-arrow-down"></i></div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1 relative z-10">Total In</p>
-                            <h4 class="text-3xl font-bold text-emerald-600 relative z-10" id="gen-dash-in">₹0</h4>
-                        </div>
-                        <div class="glass-card rounded-3xl p-5 border-l-4 border-l-red-500 relative overflow-hidden bg-white">
-                            <div class="absolute right-0 top-0 mt-4 mr-4 text-red-50 text-4xl"><i class="fas fa-arrow-up"></i></div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1 relative z-10">Total Out</p>
-                            <h4 class="text-3xl font-bold text-red-500 relative z-10" id="gen-dash-out">₹0</h4>
-                        </div>
-                    </div>
-
-                    <!-- Graph and History Table -->
-                    <div class="glass-card rounded-3xl p-6 lg:p-8 shadow-sm">
-                        <!-- Filters -->
-                        <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-6">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-800">Analytics & History</h3>
-                                <p class="text-sm text-slate-500 font-medium mt-1">Track your cashflow over time</p>
-                            </div>
-                            <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto bg-slate-50 p-2 rounded-xl border border-slate-200">
-                                <div class="flex items-center w-full sm:w-auto bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus-within:border-blue-500 transition-all">
-                                    <span class="text-[10px] font-bold text-slate-400 mr-2 uppercase">From</span>
-                                    <input type="date" id="filter-generic-start" class="flex-1 sm:w-auto text-sm bg-transparent font-medium text-slate-700 outline-none">
-                                </div>
-                                <div class="flex items-center w-full sm:w-auto bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus-within:border-blue-500 transition-all">
-                                    <span class="text-[10px] font-bold text-slate-400 mr-2 uppercase">To</span>
-                                    <input type="date" id="filter-generic-end" class="flex-1 sm:w-auto text-sm bg-transparent font-medium text-slate-700 outline-none">
-                                </div>
-                                <button onclick="App.renderGenericDashboard()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-                                    Filter
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Chart -->
-                        <div class="w-full h-[250px] mb-8 border-b border-slate-100 pb-6 relative">
-                            <canvas id="chart-generic"></canvas>
-                        </div>
-
-                        <!-- Table -->
-                        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                            <table class="w-full text-left text-sm">
-                                <thead class="text-[11px] text-slate-500 uppercase bg-slate-50 tracking-wider font-semibold">
-                                    <tr>
-                                        <th class="px-5 py-4 rounded-tl-xl">Date</th>
-                                        <th class="px-5 py-4 w-1/2">Description</th>
-                                        <th class="px-5 py-4 text-right rounded-tr-xl">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="generic-table-body" class="divide-y divide-slate-100">
-                                    <!-- JS populated -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="stock-view" class="hidden fade-in">
-                <!-- Navigation -->
-                <button onclick="App.switchView('home')" class="mb-6 text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-2 transition-all group bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm w-fit hover:shadow-md text-sm">
-                    <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> Back to Dashboard
-                </button>
-
-                <!-- Header -->
-                <div class="flex items-center gap-4 mb-8">
-                    <div class="w-14 h-14 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-2xl text-white shadow-md shadow-indigo-500/20"><i class="fas fa-chart-line"></i></div>
-                    <div>
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Stock Market & SIP</h2>
-                        <p class="text-sm text-slate-500 font-medium mt-0.5">Manage and track your investments</p>
+                    <div class="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center text-2xl text-gray-400" id="cat-icon">
+                        <i class="fas fa-wallet"></i>
                     </div>
                 </div>
 
                 <!-- Tabs Navigation -->
-                <div class="flex space-x-6 mb-6 border-b border-slate-200 px-2 overflow-x-auto">
-                    <button class="tab-btn active pb-3 text-[15px] whitespace-nowrap" id="tab-stock-form" onclick="App.switchStockTab('form')">
-                        <i class="fas fa-cart-plus mr-2"></i> Execute Trade
-                    </button>
-                    <button class="tab-btn pb-3 text-[15px] whitespace-nowrap" id="tab-stock-dash" onclick="App.switchStockTab('dash')">
-                        <i class="fas fa-chart-pie mr-2"></i> Portfolio Dashboard
-                    </button>
-                    <button class="tab-btn pb-3 text-[15px] whitespace-nowrap" id="tab-stock-master" onclick="App.switchStockTab('master')">
-                        <i class="fas fa-list-ul mr-2"></i> Asset Registry
-                    </button>
+                <div class="flex gap-6 border-b border-gray-200 px-2 overflow-x-auto hide-scroll">
+                    <button class="cat-tab-btn tab-btn active pb-3 px-2 text-sm font-medium text-gray-500 whitespace-nowrap" data-target="cat-form-tab">New Entry</button>
+                    <button class="cat-tab-btn tab-btn pb-3 px-2 text-sm font-medium text-gray-500 whitespace-nowrap" data-target="cat-dash-tab">Dashboard</button>
                 </div>
 
-                <!-- Tab 1: Log Investment Form -->
-                <div id="content-stock-form" class="fade-in">
-                    <div class="max-w-2xl mx-auto glass-card rounded-3xl p-6 lg:p-8 shadow-sm border-t-4 border-t-indigo-500">
-                        <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 text-sm"><i class="fas fa-bolt"></i></div>
-                            Trade Execution
-                        </h3>
-                        <div class="space-y-5">
+                <!-- Tab Content: Form -->
+                <div id="cat-form-tab" class="cat-tab-content bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <form id="form-category" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Trade Action</label>
-                                <div class="flex bg-slate-100 p-1 rounded-xl">
-                                    <label class="flex-1 text-center radio-segment cursor-pointer relative">
-                                        <input type="radio" name="stock-trans-type" value="buy" class="sr-only" checked>
-                                        <div class="py-2.5 rounded-lg text-sm font-semibold text-slate-500 transition-all flex items-center justify-center gap-2">
-                                            <i class="fas fa-plus text-indigo-500"></i> Buy Asset
-                                        </div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                <input type="date" id="cat-date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Transaction Type</label>
+                                <div class="flex p-1 bg-gray-100 rounded-lg">
+                                    <label class="flex-1 text-center cursor-pointer">
+                                        <input type="radio" name="cat-type" value="in" checked class="peer sr-only">
+                                        <div class="py-1.5 rounded-md peer-checked:bg-white peer-checked:shadow-sm text-sm font-medium text-gray-600 peer-checked:text-green-600 transition">Money In (+)</div>
                                     </label>
-                                    <label class="flex-1 text-center radio-segment cursor-pointer relative">
-                                        <input type="radio" name="stock-trans-type" value="sell" class="sr-only">
-                                        <div class="py-2.5 rounded-lg text-sm font-semibold text-slate-500 transition-all flex items-center justify-center gap-2">
-                                            <i class="fas fa-minus text-amber-500"></i> Sell Asset
-                                        </div>
+                                    <label class="flex-1 text-center cursor-pointer">
+                                        <input type="radio" name="cat-type" value="out" class="peer sr-only">
+                                        <div class="py-1.5 rounded-md peer-checked:bg-white peer-checked:shadow-sm text-sm font-medium text-gray-600 peer-checked:text-red-600 transition">Money Out (-)</div>
                                     </label>
                                 </div>
                             </div>
-                            
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Asset Type</label>
-                                    <select id="stock-action" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-slate-700" onchange="App.toggleStockFields()">
-                                        <option value="share">Company Share</option>
-                                        <option value="sip">Mutual Fund SIP</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Date</label>
-                                    <input type="date" id="stock-date" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-slate-700">
-                                </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                                <input type="number" id="cat-amount" required min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <input type="text" id="cat-desc" required placeholder="What was this for?" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full sm:w-auto bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition">Save Transaction</button>
+                    </form>
+                </div>
 
+                <!-- Tab Content: Dashboard & History -->
+                <div id="cat-dash-tab" class="cat-tab-content hidden space-y-6">
+                    <!-- Filters -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center gap-3">
+                        <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Filter Data:</span>
+                        <input type="date" id="cat-filter-start" class="w-full sm:flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+                        <span class="text-gray-400 hidden sm:inline">to</span>
+                        <input type="date" id="cat-filter-end" class="w-full sm:flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+                        <button onclick="App.renderCategoryView()" class="w-full sm:w-auto bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-gray-800 transition">Apply</button>
+                        <button onclick="App.clearCategoryFilters()" class="w-full sm:w-auto bg-gray-100 text-gray-600 px-4 py-1.5 rounded-lg text-sm hover:bg-gray-200 transition">Clear</button>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-800 mb-4">Balance Trend</h3>
+                        <div class="h-[250px] w-full"><canvas id="catChart"></canvas></div>
+                    </div>
+
+                    <!-- History -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-800 mb-4">Transaction History</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-gray-500 uppercase bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 rounded-tl-lg">Date</th>
+                                        <th class="px-4 py-3">Description</th>
+                                        <th class="px-4 py-3 text-right rounded-tr-lg">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cat-history-list" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                            <div id="cat-empty-state" class="hidden py-8 text-center text-gray-500">No transactions found.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Stock Market -->
+            <div id="view-stock" class="hidden view-section max-w-5xl mx-auto space-y-6">
+                <!-- Header -->
+                <div class="flex items-center gap-4">
+                    <button onclick="App.switchView('home')" class="p-2 hover:bg-gray-200 rounded-full transition text-gray-600"><i class="fas fa-arrow-left"></i></button>
+                    <h2 class="text-2xl font-semibold text-gray-900">Stock Market Portfolio</h2>
+                </div>
+
+                <!-- Stats Card -->
+                <div class="bg-gradient-to-r from-indigo-800 to-indigo-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+                    <p class="text-indigo-200 text-sm font-medium mb-1">Total Invested Value</p>
+                    <h2 class="text-4xl font-semibold" id="stock-total-invested">₹0</h2>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="flex gap-6 border-b border-gray-200 px-2 overflow-x-auto hide-scroll">
+                    <button class="stock-tab-btn tab-btn active pb-3 px-2 text-sm font-medium text-gray-500 whitespace-nowrap" data-target="stock-form-tab">Add Transaction</button>
+                    <button class="stock-tab-btn tab-btn pb-3 px-2 text-sm font-medium text-gray-500 whitespace-nowrap" data-target="stock-dash-tab">Dashboard</button>
+                    <button class="stock-tab-btn tab-btn pb-3 px-2 text-sm font-medium text-gray-500 whitespace-nowrap" data-target="stock-details-tab">Asset Registry</button>
+                </div>
+
+                <!-- Tab Content: Form (Transaction) -->
+                <div id="stock-form-tab" class="stock-tab-content bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <form id="form-stock" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Select Asset (From Registry)</label>
-                                <select id="stock-name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-slate-700" onchange="App.updateSipAmount()">
-                                    <!-- JS populated -->
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                <input type="date" id="stock-date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Investment Type</label>
+                                <div class="flex p-1 bg-gray-100 rounded-lg">
+                                    <label class="flex-1 text-center cursor-pointer">
+                                        <input type="radio" name="stock-type" value="share" checked class="peer sr-only">
+                                        <div class="py-1.5 rounded-md peer-checked:bg-white peer-checked:shadow-sm text-sm font-medium text-gray-600 peer-checked:text-indigo-600 transition">Share</div>
+                                    </label>
+                                    <label class="flex-1 text-center cursor-pointer">
+                                        <input type="radio" name="stock-type" value="sip" class="peer sr-only">
+                                        <div class="py-1.5 rounded-md peer-checked:bg-white peer-checked:shadow-sm text-sm font-medium text-gray-600 peer-checked:text-indigo-600 transition">SIP</div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Select Asset</label>
+                                <select id="stock-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none bg-white focus:border-indigo-500">
+                                    <option value="">Select from Registry...</option>
                                 </select>
                             </div>
-                            
-                            <div id="share-fields" class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Quantity</label>
-                                    <input type="number" id="stock-qty" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-bold text-slate-800" placeholder="0" oninput="App.calcStockTotal()">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Price per Share</label>
-                                    <div class="relative">
-                                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 font-medium">₹</span>
-                                        <input type="number" id="stock-price" class="w-full pl-7 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-bold text-slate-800" placeholder="0.00" oninput="App.calcStockTotal()">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-widest" id="total-label">Total Cost Calculation</label>
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-indigo-500 font-semibold text-lg">₹</span>
-                                    <input type="number" id="stock-total" class="w-full pl-9 pr-4 py-3 border border-indigo-100 rounded-lg bg-white font-bold text-indigo-700 text-xl shadow-inner focus:outline-none" placeholder="0.00" readonly>
-                                </div>
-                            </div>
-                            
-                            <div class="pt-2">
-                                <button onclick="App.saveStockTransaction()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                                    Add to Portfolio
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab 2: Dashboard -->
-                <div id="content-stock-dash" class="hidden space-y-6 fade-in">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                        <div class="glass-card rounded-3xl p-5 border-l-4 border-l-indigo-600 relative overflow-hidden bg-white">
-                            <div class="absolute right-0 top-0 mt-4 mr-4 text-indigo-50 text-4xl"><i class="fas fa-chart-pie"></i></div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1 relative z-10">Total Invested (Net)</p>
-                            <h4 class="text-3xl font-bold text-slate-800 relative z-10" id="stock-dash-net">₹0</h4>
-                        </div>
-                        <div class="glass-card rounded-3xl p-5 border-l-4 border-l-blue-500 relative overflow-hidden bg-white">
-                            <div class="absolute right-0 top-0 mt-4 mr-4 text-blue-50 text-4xl"><i class="fas fa-building"></i></div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1 relative z-10">Shares Value</p>
-                            <h4 class="text-3xl font-bold text-slate-800 relative z-10" id="stock-dash-shares">₹0</h4>
-                        </div>
-                        <div class="glass-card rounded-3xl p-5 border-l-4 border-l-purple-500 relative overflow-hidden bg-white">
-                            <div class="absolute right-0 top-0 mt-4 mr-4 text-purple-50 text-4xl"><i class="fas fa-seedling"></i></div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1 relative z-10">SIP Value</p>
-                            <h4 class="text-3xl font-bold text-slate-800 relative z-10" id="stock-dash-sips">₹0</h4>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-3xl p-6 lg:p-8 shadow-sm">
-                        <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-6">
                             <div>
-                                <h3 class="text-xl font-bold text-slate-800">Portfolio Analytics</h3>
-                                <p class="text-sm text-slate-500 font-medium mt-1">Growth of your total investments</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Action</label>
+                                <div class="flex p-1 bg-gray-100 rounded-lg">
+                                    <label class="flex-1 text-center cursor-pointer">
+                                        <input type="radio" name="stock-action" value="buy" checked class="peer sr-only">
+                                        <div class="py-1.5 rounded-md peer-checked:bg-white peer-checked:shadow-sm text-sm font-medium text-gray-600 peer-checked:text-green-600 transition">Buy / Add</div>
+                                    </label>
+                                    <label class="flex-1 text-center cursor-pointer">
+                                        <input type="radio" name="stock-action" value="sell" class="peer sr-only">
+                                        <div class="py-1.5 rounded-md peer-checked:bg-white peer-checked:shadow-sm text-sm font-medium text-gray-600 peer-checked:text-red-600 transition">Sell / Withdraw</div>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto bg-slate-50 p-2 rounded-xl border border-slate-200">
-                                <div class="flex items-center w-full sm:w-auto bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus-within:border-indigo-500 transition-all">
-                                    <span class="text-[10px] font-bold text-slate-400 mr-2 uppercase">From</span>
-                                    <input type="date" id="filter-stock-start" class="flex-1 sm:w-auto text-sm bg-transparent font-medium text-slate-700 outline-none">
-                                </div>
-                                <div class="flex items-center w-full sm:w-auto bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus-within:border-indigo-500 transition-all">
-                                    <span class="text-[10px] font-bold text-slate-400 mr-2 uppercase">To</span>
-                                    <input type="date" id="filter-stock-end" class="flex-1 sm:w-auto text-sm bg-transparent font-medium text-slate-700 outline-none">
-                                </div>
-                                <button onclick="App.renderStockDashboard()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-                                    Filter
-                                </button>
+                            
+                            <!-- Dynamic Fields (Quantity & Price for Shares) -->
+                            <div id="stock-qty-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                <input type="number" id="stock-qty" min="1" step="any" class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <div id="stock-price-group">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Price per Share (₹)</label>
+                                <input type="number" id="stock-price" min="0" step="any" class="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <!-- SIP Total Amount Field -->
+                            <div id="stock-total-group" class="col-span-1 sm:col-span-2 bg-indigo-50 p-4 rounded-lg hidden">
+                                <label class="block text-sm font-semibold text-indigo-900 mb-1">SIP Amount Invested (₹)</label>
+                                <input type="number" id="stock-total-amount" min="1" readonly class="w-full px-4 py-2 bg-indigo-100/50 border border-indigo-200 rounded-lg outline-none text-indigo-900 font-medium">
+                                <p class="text-xs text-indigo-600 mt-1"><i class="fas fa-info-circle mr-1"></i>Amount is auto-fetched from Asset Registry.</p>
                             </div>
                         </div>
                         
-                        <div class="w-full h-[250px] mb-8 border-b border-slate-100 pb-6 relative">
-                            <canvas id="chart-stock"></canvas>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 flex justify-between items-center mt-5" id="calc-total-box">
+                            <span class="text-sm font-medium text-gray-600">Calculated Total:</span>
+                            <span class="text-xl font-bold text-gray-900" id="stock-calculated-total">₹0</span>
                         </div>
+                        
+                        <button type="submit" class="w-full sm:w-auto bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition mt-5">Save Investment</button>
+                    </form>
+                </div>
 
-                        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                            <table class="w-full text-left text-sm">
-                                <thead class="text-[11px] text-slate-500 uppercase bg-slate-50 tracking-wider font-semibold">
+                <!-- Tab Content: Dashboard & History -->
+                <div id="stock-dash-tab" class="stock-tab-content hidden space-y-6">
+                    <!-- Filters -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center gap-3">
+                        <span class="text-sm font-medium text-gray-500 whitespace-nowrap">Filter Data:</span>
+                        <input type="date" id="stock-filter-start" class="w-full sm:flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+                        <span class="text-gray-400 hidden sm:inline">to</span>
+                        <input type="date" id="stock-filter-end" class="w-full sm:flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+                        <button onclick="App.renderStockView()" class="w-full sm:w-auto bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-gray-800 transition">Apply</button>
+                        <button onclick="App.clearStockFilters()" class="w-full sm:w-auto bg-gray-100 text-gray-600 px-4 py-1.5 rounded-lg text-sm hover:bg-gray-200 transition">Clear</button>
+                    </div>
+
+                    <!-- Mini Asset Cards (Dynamic) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" id="stock-asset-cards">
+                        <!-- Cards injected here -->
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-4">Shares Performance</h3>
+                            <div class="h-[250px]"><canvas id="stockShareChart"></canvas></div>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-4">SIP Performance</h3>
+                            <div class="h-[250px]"><canvas id="stockSipChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- History -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-800 mb-4">Investment History</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-gray-500 uppercase bg-gray-50">
                                     <tr>
-                                        <th class="px-5 py-4 rounded-tl-xl">Date</th>
-                                        <th class="px-5 py-4">Asset</th>
-                                        <th class="px-5 py-4 text-right">Details</th>
-                                        <th class="px-5 py-4 text-right rounded-tr-xl">Total Cost</th>
+                                        <th class="px-4 py-3 rounded-tl-lg">Date</th>
+                                        <th class="px-4 py-3">Type</th>
+                                        <th class="px-4 py-3">Asset</th>
+                                        <th class="px-4 py-3 text-center">Action</th>
+                                        <th class="px-4 py-3 text-right">Qty × Price</th>
+                                        <th class="px-4 py-3 text-right rounded-tr-lg">Total</th>
                                     </tr>
                                 </thead>
-                                <tbody id="stock-table-body" class="divide-y divide-slate-100">
-                                    <!-- JS will populate -->
-                                </tbody>
+                                <tbody id="stock-history-list" class="divide-y divide-gray-100"></tbody>
                             </table>
+                            <div id="stock-empty-state" class="hidden py-8 text-center text-gray-500">No investments found.</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab 3: Asset Registry Setup -->
-                <div id="content-stock-master" class="hidden fade-in">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="glass-card rounded-3xl p-6 lg:p-8 shadow-sm">
-                            <h3 class="text-lg font-bold text-slate-800 mb-5 flex items-center gap-3 pb-4 border-b border-slate-100">
-                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-sm"><i class="fas fa-plus"></i></div>
-                                Register New Asset
-                            </h3>
-                            <div class="space-y-4">
+                <!-- Tab Content: Details/Registry -->
+                <div id="stock-details-tab" class="stock-tab-content hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Add New Asset Form -->
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 md:col-span-1 h-fit">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-4">Add to Registry</h3>
+                            <form id="form-stock-detail" class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Asset Type</label>
-                                    <select id="detail-type" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-700" onchange="App.toggleDetailAmount()">
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Asset Type</label>
+                                    <select id="sd-type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white outline-none">
                                         <option value="share">Company Share</option>
                                         <option value="sip">Mutual Fund SIP</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Asset Name</label>
-                                    <input type="text" id="detail-name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium" placeholder="e.g. Reliance, HDFC Flexi...">
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Name / Ticker</label>
+                                    <input type="text" id="sd-name" required placeholder="e.g. Tata Motors" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none">
                                 </div>
-                                <div id="detail-amount-wrapper" class="hidden">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">SIP Fixed Monthly Amount (₹)</label>
-                                    <div class="relative">
-                                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 font-medium">₹</span>
-                                        <input type="number" id="detail-amount" class="w-full pl-7 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-700" placeholder="5000">
-                                    </div>
+                                <div id="sd-amount-container" class="hidden">
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">SIP Amount (₹)</label>
+                                    <input type="number" id="sd-amount" min="1" placeholder="e.g. 5000" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none">
                                 </div>
-                                <button onclick="App.saveStockDetail()" class="w-full mt-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3.5 px-4 rounded-xl transition-all shadow-md">
-                                    Save to Registry
-                                </button>
-                            </div>
+                                <button type="submit" class="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">Save Asset</button>
+                            </form>
                         </div>
 
-                        <div class="glass-card rounded-3xl p-6 lg:p-8 shadow-sm bg-slate-50/50">
-                            <h3 class="text-lg font-bold text-slate-800 mb-5 pb-4 border-b border-slate-200">Registered Assets</h3>
-                            <div class="space-y-6">
+                        <!-- Saved Assets List -->
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 md:col-span-2">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-4">Saved Assets Registry</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div>
-                                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> Company Shares
-                                    </h4>
-                                    <ul id="list-shares" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar"></ul>
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">My Shares</h4>
+                                    <ul id="sd-list-shares" class="space-y-2"></ul>
                                 </div>
                                 <div>
-                                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <span class="w-2 h-2 rounded-full bg-purple-500"></span> SIP Funds
-                                    </h4>
-                                    <ul id="list-sips" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar"></ul>
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">My SIPs</h4>
+                                    <ul id="sd-list-sips" class="space-y-2"></ul>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-            </section>
+            </div>
+            
         </main>
     </div>
 
     <script>
         // Utilities
-        // Note: Intl.NumberFormat already outputs the currency symbol internally if style is currency.
-        // We use plain number formatting and manually add ₹ where necessary.
-        const formatMoney = (amount) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.abs(amount));
-        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-        
-        const generateHash = async (string) => {
-            const msgBuffer = new TextEncoder().encode(string);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        };
-        
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+        const formatMoney = (amount) => new Intl.NumberFormat('en-IN').format(Math.abs(amount));
         const showToast = (message, type = 'success') => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            const bg = type === 'success' ? 'bg-slate-800 text-white' : 'bg-red-50 text-red-600 border border-red-200';
-            const icon = type === 'success' ? 'fa-check-circle text-emerald-400' : 'fa-exclamation-triangle';
-            toast.className = `toast-enter ${bg} px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-semibold`;
-            toast.innerHTML = `<i class="fas ${icon} text-lg"></i> ${message}`;
+            const bgClass = type === 'success' ? 'bg-gray-900' : 'bg-red-600';
+            const icon = type === 'success' ? 'fa-check-circle text-green-400' : 'fa-exclamation-circle text-white';
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 toast-enter text-sm font-medium`;
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
             container.appendChild(toast);
             setTimeout(() => {
-                toast.classList.replace('toast-enter', 'toast-leave');
-                setTimeout(() => toast.remove(), 400);
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
             }, 3000);
         };
-
-        const AppState = {
-            currentUser: localStorage.getItem('aks_session') || null,
-            username: localStorage.getItem('aks_username') || null,
-            currentCategory: null,
-            chartInstance: null,
-            homeChartInstance: null
+        const showLoading = (show) => {
+            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
         };
 
-        // Real Cloud Database Implementation
+        // UI Text Truncation Toggle logic (See More / See Less)
+        function toggleDesc(id) {
+            const el = document.getElementById(id);
+            const isTruncated = el.classList.contains('truncate');
+            const btn = el.nextElementSibling;
+            if (isTruncated) {
+                el.classList.remove('truncate', 'max-w-[150px]');
+                btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+            } else {
+                el.classList.add('truncate', 'max-w-[150px]');
+                btn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+            }
+        }
+
+        // ==========================================
+        // DATABASE: Cloud Sync Wrapper (Netlify -> GSheet)
+        // ==========================================
         class CloudDB {
             constructor() {
-                const tables = ['users', 'stock_details', 'stock_market', 'bank', 'personal_pocket', 'piggy_bank'];
-                tables.forEach(t => { if (!localStorage.getItem(`aks_${t}`)) localStorage.setItem(`aks_${t}`, JSON.stringify([])); });
-            }
-            
-            get(table) { return JSON.parse(localStorage.getItem(`aks_${table}`)); }
-            set(table, data) { localStorage.setItem(`aks_${table}`, JSON.stringify(data)); }
-            
-            // Cloud se sabhi data ek sath fetch karna
-            async syncFromCloud() {
-                try {
-                    const res = await fetch('/.netlify/functions/api');
-                    if (res.ok) {
-                        const cloudData = await res.json();
-                        Object.keys(cloudData).forEach(table => {
-                            if (cloudData[table]) this.set(table, cloudData[table]);
-                        });
-                        console.log("Cloud Sync Complete");
-                    }
-                } catch(e) { console.warn("Running offline right now. Waiting for cloud...", e); }
-            }
-
-            async insert(table, data) {
-                // Optimistic UI Update: UI turant update karne ke liye local me dalna
-                const records = this.get(table);
-                const newRecord = { id: 'ID_' + Date.now().toString(36), createdAt: new Date().toISOString(), userId: AppState.currentUser, ...data };
-                records.push(newRecord);
-                this.set(table, records);
-
-                // API request to Netlify Function (Background me chalega)
-                try {
-                    await fetch('/.netlify/functions/api', {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'insert', table: table, record: newRecord })
-                    });
-                } catch(e) {
-                    console.error("Failed to push to cloud", e);
+                this.apiEndpoint = '/.netlify/functions/api';
+                this.localCache = {
+                    stock_details: [],
+                    stock_market: [],
+                    bank: [],
+                    personal_pocket: [],
+                    piggy_bank: []
+                };
+                
+                // Load cache from local storage so UI is instant on refresh
+                const saved = localStorage.getItem('aksDiaryData');
+                if (saved) {
+                    this.localCache = JSON.parse(saved);
                 }
-                return newRecord;
+            }
+
+            saveCache() {
+                localStorage.setItem('aksDiaryData', JSON.stringify(this.localCache));
+            }
+
+            // Central Request function
+            async request(action, sheetName = '', payload = null) {
+                // Check if running locally without Netlify backend
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '') {
+                   if(action === 'add') return {status: 'success'};
+                   return this.localCache[sheetName] || [];
+                }
+
+                try {
+                    const reqBody = { action, sheetName, payload };
+                    const res = await fetch(this.apiEndpoint, {
+                        method: 'POST',
+                        body: JSON.stringify(reqBody)
+                    });
+                    const data = await res.json();
+                    return data;
+                } catch (error) {
+                    console.error("API Error (Fallback to cache):", error);
+                    // Fallback logic for reading if offline
+                    if(action !== 'add') {
+                        return this.localCache[sheetName] || [];
+                    }
+                    throw error;
+                }
+            }
+
+            // Generic Data operations
+            async getTransactions(userId, category) {
+                const data = await this.request('getData', category);
+                if(data && data.length > 0) {
+                    this.localCache[category] = data;
+                    this.saveCache();
+                }
+                return this.localCache[category].filter(t => t.userId === userId);
+            }
+
+            async addTransaction(category, data) {
+                // Optimistic UI update
+                if(!this.localCache[category]) this.localCache[category] = [];
+                this.localCache[category].push(data);
+                this.saveCache();
+                
+                // Background Sync
+                this.request('add', category, data).catch(e => console.error("Sync error:", e));
+                return data;
             }
             
-            fetchUserRecords(table) { return this.get(table).filter(r => String(r.userId) === String(AppState.currentUser)); }
+            // Sync all user data in background
+            async syncAllData(userId) {
+                const tables = ['stock_details', 'stock_market', 'bank', 'personal_pocket', 'piggy_bank'];
+                for(let table of tables) {
+                    try {
+                        const data = await this.request('getData', table);
+                        if(data) this.localCache[table] = data;
+                    } catch(e){}
+                }
+                this.saveCache();
+            }
         }
+
         const DB = new CloudDB();
 
-        // Main App Controller
+        // ==========================================
+        // APP STATE & CONTROLLER
+        // ==========================================
+        const AppState = {
+            currentUser: { id: 'admin', username: 'Aks' }, // Hardcoded user for personal app
+            currentCategory: null, 
+            charts: {}
+        };
+
         const App = {
-            async init() {
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('generic-date').value = today;
-                document.getElementById('stock-date').value = today;
-                
-                if (AppState.currentUser) {
-                    this.switchView('home');
-                    // App start hote hi background me GSheet ka latest data le aayega
-                    await DB.syncFromCloud(); 
-                    if(document.getElementById('home-view').classList.contains('hidden') === false) {
-                        this.renderHomeDashboard(); // Sync ke baad dashboard refresh karna
-                    }
-                }
-                else document.getElementById('login-view').classList.remove('hidden');
-            },
+            init() {
+                this.bindNavigation();
+                this.bindForms();
+                this.bindFilters();
 
-            async handleLogin() {
-                const u = document.getElementById('auth-username').value.trim();
-                const p = document.getElementById('auth-password').value;
-                if (!u || !p) return showToast('Please enter credentials.', 'error');
-                const hashedP = await generateHash(p);
-                const user = DB.get('users').find(user => user.username === u && user.password === hashedP);
-                if (user) {
-                    this.setSession(user.id, user.username);
-                    showToast('Welcome back, ' + user.username + '!');
-                }
-                else showToast('Invalid username or password.', 'error');
-            },
-            
-            async handleRegister() {
-                const u = document.getElementById('auth-username').value.trim();
-                const p = document.getElementById('auth-password').value;
-                if (!u || !p) return showToast('Please fill both fields.', 'error');
-                if (DB.get('users').find(user => user.username === u)) return showToast('Username already exists!', 'error');
-                const hashedP = await generateHash(p);
-                const newUser = DB.insert('users', { username: u, password: hashedP });
-                showToast('Registration Successful! Logged in.');
-                this.setSession(newUser.id, newUser.username);
-            },
-            
-            setSession(id, username) {
-                localStorage.setItem('aks_session', id);
-                localStorage.setItem('aks_username', username);
-                AppState.currentUser = id; AppState.username = username;
-                document.getElementById('auth-username').value = ''; document.getElementById('auth-password').value = '';
+                // Start directly with the Home view
                 this.switchView('home');
-            },
-            
-            logout() {
-                localStorage.clear();
-                location.reload();
-            },
 
-            switchView(viewId, categoryId = null) {
-                ['login-view', 'home-view', 'generic-view', 'stock-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
-                document.getElementById('app-wrapper').classList.remove('hidden');
-                document.getElementById('nav-username').innerText = AppState.username;
-                document.getElementById('nav-avatar').innerText = AppState.username.charAt(0).toUpperCase();
-                
-                document.getElementById(`${viewId}-view`).classList.remove('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
-                if (viewId === 'home') this.renderHomeDashboard();
-                if (viewId === 'generic' && categoryId) this.openCategory(categoryId);
-                if (viewId === 'stock') {
-                    this.switchStockTab('form'); // Open form first
-                    this.renderStockDetails(); 
-                }
-            },
-
-            // --- Generic Tab Logic (Bank/Pocket/Piggy) ---
-            switchGenericTab(tabName) {
-                ['dash', 'form'].forEach(t => {
-                    document.getElementById(`tab-generic-${t}`).classList.remove('active');
-                    document.getElementById(`content-generic-${t}`).classList.add('hidden');
-                });
-                document.getElementById(`tab-generic-${tabName}`).classList.add('active');
-                document.getElementById(`content-generic-${tabName}`).classList.remove('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                if(tabName === 'dash') this.renderGenericDashboard();
-            },
-
-            openCategory(cat) {
-                AppState.currentCategory = cat;
-                const config = {
-                    bank: { title: 'Bank Account', subtitle: 'Primary banking transactions', icon: 'fa-university', color: 'bg-blue-600', border: 'border-t-blue-600' },
-                    pocket: { title: 'Pocket Wallet', subtitle: 'Daily wallet spends', icon: 'fa-wallet', color: 'bg-emerald-500', border: 'border-t-emerald-500' },
-                    piggy: { title: 'Cash Vault', subtitle: 'Physical savings & stashes', icon: 'fa-piggy-bank', color: 'bg-pink-500', border: 'border-t-pink-500' }
-                };
-                const c = config[cat];
-                document.getElementById('generic-title').innerText = c.title;
-                document.getElementById('generic-subtitle').innerText = c.subtitle;
-                document.getElementById('generic-icon').className = `w-14 h-14 rounded-2xl flex items-center justify-center text-2xl text-white shadow-md ${c.color}`;
-                document.getElementById('generic-icon').innerHTML = `<i class="fas ${c.icon}"></i>`;
-                document.getElementById('generic-form-border').className = `max-w-2xl mx-auto glass-card rounded-3xl p-6 lg:p-8 shadow-sm border-t-4 ${c.border}`;
-
-                document.getElementById('filter-generic-start').value = ''; document.getElementById('filter-generic-end').value = '';
-                this.switchGenericTab('form'); // Form first
-            },
-
-            saveGenericTransaction() {
-                const record = {
-                    category: AppState.currentCategory,
-                    date: document.getElementById('generic-date').value,
-                    type: document.querySelector('input[name="generic-type"]:checked').value,
-                    amount: parseFloat(document.getElementById('generic-amount').value),
-                    desc: document.getElementById('generic-desc').value.trim()
-                };
-                if (!record.date || !record.amount || !record.desc) return showToast('Please complete the form.', 'error');
-                
-                const tableMap = { bank: 'bank', pocket: 'personal_pocket', piggy: 'piggy_bank' };
-                DB.insert(tableMap[AppState.currentCategory], record);
-                
-                showToast('Transaction Logged!');
-                document.getElementById('generic-amount').value = ''; document.getElementById('generic-desc').value = '';
-                this.switchGenericTab('dash');
-            },
-
-            renderGenericDashboard() {
-                const cat = AppState.currentCategory;
-                const tableMap = { bank: 'bank', pocket: 'personal_pocket', piggy: 'piggy_bank' };
-                let txs = DB.fetchUserRecords(tableMap[cat]);
-                
-                const sDate = document.getElementById('filter-generic-start').value;
-                const eDate = document.getElementById('filter-generic-end').value;
-                if (sDate && eDate) txs = txs.filter(t => t.date >= sDate && t.date <= eDate);
-                txs.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                let tIn = 0, tOut = 0, rBal = 0, cLbl = [], cDat = [];
-
-                txs.forEach(t => {
-                    if (t.type === 'in') { tIn += t.amount; rBal += t.amount; } else { tOut += t.amount; rBal -= t.amount; }
-                    if(!cLbl.includes(t.date)) cLbl.push(t.date);
-                    cDat.push(rBal);
-                });
-
-                document.getElementById('gen-dash-bal').innerText = '₹' + formatMoney(tIn - tOut);
-                document.getElementById('gen-dash-in').innerText = '₹' + formatMoney(tIn);
-                document.getElementById('gen-dash-out').innerText = '₹' + formatMoney(tOut);
-
-                const colors = { bank: '#3b82f6', pocket: '#10b981', piggy: '#ec4899' };
-                this.createChart('chart-generic', cLbl, cDat, 'Balance', colors[cat]);
-
-                const tbody = document.getElementById('generic-table-body'); tbody.innerHTML = '';
-                if(txs.length === 0) return tbody.innerHTML = `<tr><td colspan="3" class="px-5 py-10 text-center text-slate-400 text-sm">No records found.</td></tr>`;
-
-                [...txs].reverse().forEach(t => {
-                    const isIncome = t.type === 'in';
-                    const amountStr = (isIncome ? '+ ₹' : '- ₹') + formatMoney(t.amount);
-                    const colorClass = isIncome ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50';
-                    const shortDesc = t.desc.length > 40;
-                    
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
-                            <td class="px-5 py-4 whitespace-nowrap font-semibold text-slate-500 text-xs">${formatDate(t.date)}</td>
-                            <td class="px-5 py-4 max-w-xs">
-                                <span id="desc-${t.id}" class="truncate w-full block transition-all font-medium text-slate-700 text-sm leading-relaxed">${t.desc}</span>
-                                ${shortDesc ? `<button onclick="App.toggleText('${t.id}')" class="text-blue-500 hover:text-blue-700 font-semibold text-xs mt-1 flex items-center gap-1"><span id="lbl-${t.id}">See more</span> <i id="icon-${t.id}" class="fas fa-chevron-down text-[10px]"></i></button>` : ''}
-                            </td>
-                            <td class="px-5 py-4 text-right">
-                                <span class="inline-block px-2.5 py-1 rounded-lg font-bold text-xs ${colorClass}">${amountStr}</span>
-                            </td>
-                        </tr>`;
-                });
-            },
-
-            toggleText(id) {
-                const span = document.getElementById(`desc-${id}`);
-                const icon = document.getElementById(`icon-${id}`);
-                const lbl = document.getElementById(`lbl-${id}`);
-                if(span.classList.contains('truncate')) {
-                    span.classList.remove('truncate', 'block'); span.classList.add('desc-expanded');
-                    icon.className = 'fas fa-chevron-up text-[10px]'; lbl.innerText = 'Show less';
-                } else {
-                    span.classList.add('truncate', 'block'); span.classList.remove('desc-expanded');
-                    icon.className = 'fas fa-chevron-down text-[10px]'; lbl.innerText = 'See more';
-                }
-            },
-
-            // --- Stock Tab Logic ---
-            switchStockTab(tabName) {
-                ['dash', 'form', 'master'].forEach(t => {
-                    document.getElementById(`tab-stock-${t}`).classList.remove('active');
-                    document.getElementById(`content-stock-${t}`).classList.add('hidden');
-                });
-                document.getElementById(`tab-stock-${tabName}`).classList.add('active');
-                document.getElementById(`content-stock-${tabName}`).classList.remove('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                if(tabName === 'dash') this.renderStockDashboard();
-            },
-
-            toggleDetailAmount() {
-                const isSip = document.getElementById('detail-type').value === 'sip';
-                document.getElementById('detail-amount-wrapper').classList.toggle('hidden', !isSip);
-            },
-
-            saveStockDetail() {
-                const type = document.getElementById('detail-type').value;
-                const name = document.getElementById('detail-name').value.trim();
-                const amount = document.getElementById('detail-amount').value;
-                
-                if (!name || (type === 'sip' && !amount)) return showToast('Please complete asset details.', 'error');
-                
-                DB.insert('stock_details', { type, name, amount: type==='sip'? parseFloat(amount) : null });
-                showToast('Asset added to Registry!');
-                document.getElementById('detail-name').value = ''; document.getElementById('detail-amount').value = '';
-                this.renderStockDetails();
-            },
-
-            renderStockDetails() {
-                const details = DB.fetchUserRecords('stock_details');
-                const sList = document.getElementById('list-shares'); const sipList = document.getElementById('list-sips');
-                sList.innerHTML = ''; sipList.innerHTML = '';
-                
-                details.forEach(d => {
-                    const li = document.createElement('li');
-                    li.className = 'text-xs bg-white px-4 py-3 rounded-lg border border-slate-100 flex justify-between items-center';
-                    if(d.type === 'share') {
-                        li.innerHTML = `<span class="font-semibold text-slate-700">${d.name}</span> <span class="text-[9px] bg-blue-50 px-2 py-0.5 rounded text-blue-600 font-bold uppercase border border-blue-100">Share</span>`;
-                        sList.appendChild(li);
+                // Perform background sync to get latest data from Google Sheets
+                showLoading(true);
+                DB.syncAllData(AppState.currentUser.id).then(() => {
+                    // Re-render current view with fresh data
+                    if (!AppState.currentCategory) {
+                        this.renderHome();
+                    } else if (AppState.currentCategory === 'stock') {
+                        this.renderStockView();
                     } else {
-                        li.innerHTML = `<span class="font-semibold text-slate-700">${d.name}</span> <span class="text-[10px] bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded border border-purple-100">₹${formatMoney(d.amount)}/mo</span>`;
-                        sipList.appendChild(li);
+                        this.renderCategoryView();
+                    }
+                    showLoading(false);
+                });
+            },
+
+            // --- Navigation & Routing ---
+            bindNavigation() {
+                // Tab switching logic for categories
+                document.querySelectorAll('.cat-tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.cat-tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.cat-tab-content').forEach(c => c.classList.add('hidden'));
+                        e.target.classList.add('active');
+                        document.getElementById(e.target.dataset.target).classList.remove('hidden');
+                    });
+                });
+                // Tab switching logic for stock
+                document.querySelectorAll('.stock-tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.stock-tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.stock-tab-content').forEach(c => c.classList.add('hidden'));
+                        e.target.classList.add('active');
+                        document.getElementById(e.target.dataset.target).classList.remove('hidden');
+                    });
+                });
+            },
+
+            switchView(viewName) {
+                // Scroll to top automatically
+                document.getElementById('main-content').scrollTo({ top: 0, behavior: 'smooth' });
+                
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                if (viewName === 'home') {
+                    AppState.currentCategory = null;
+                    document.getElementById('view-home').classList.remove('hidden');
+                    this.renderHome();
+                } else if (viewName === 'stock') {
+                    AppState.currentCategory = 'stock';
+                    document.getElementById('view-stock').classList.remove('hidden');
+                    // Reset tabs to default (Form)
+                    document.querySelector('.stock-tab-btn[data-target="stock-form-tab"]').click();
+                    this.renderStockView();
+                } else {
+                    AppState.currentCategory = viewName;
+                    document.getElementById('view-category').classList.remove('hidden');
+                    // Reset tabs to default (Form)
+                    document.querySelector('.cat-tab-btn[data-target="cat-form-tab"]').click();
+                    this.renderCategoryView();
+                }
+            },
+
+            // --- Form Bindings ---
+            bindForms() {
+                // Standard Category Form
+                document.getElementById('form-category').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    showLoading(true);
+                    const t = {
+                        id: generateId(),
+                        createdAt: new Date().toISOString(),
+                        userId: AppState.currentUser.id, // Will always be 'admin'
+                        category: AppState.currentCategory,
+                        date: document.getElementById('cat-date').value,
+                        type: document.querySelector('input[name="cat-type"]:checked').value,
+                        amount: parseFloat(document.getElementById('cat-amount').value),
+                        desc: document.getElementById('cat-desc').value
+                    };
+                    await DB.addTransaction(AppState.currentCategory, t);
+                    document.getElementById('form-category').reset();
+                    // Set default date to today
+                    document.getElementById('cat-date').valueAsDate = new Date();
+                    showToast('Transaction saved successfully!');
+                    this.renderCategoryView();
+                    showLoading(false);
+                });
+
+                // Stock details dynamic form changes
+                document.getElementById('sd-type').addEventListener('change', (e) => {
+                    const amtContainer = document.getElementById('sd-amount-container');
+                    const amtInput = document.getElementById('sd-amount');
+                    if(e.target.value === 'sip') {
+                        amtContainer.classList.remove('hidden');
+                        amtInput.required = true;
+                    } else {
+                        amtContainer.classList.add('hidden');
+                        amtInput.required = false;
+                        amtInput.value = '';
                     }
                 });
-                if(sList.children.length === 0) sList.innerHTML = '<li class="text-[11px] text-slate-400 py-2">No shares saved yet.</li>';
-                if(sipList.children.length === 0) sipList.innerHTML = '<li class="text-[11px] text-slate-400 py-2">No SIPs saved yet.</li>';
-                
-                this.populateStockDropdown();
-            },
 
-            toggleStockFields() {
-                const isSip = document.getElementById('stock-action').value === 'sip';
-                document.getElementById('share-fields').classList.toggle('hidden', isSip);
-                document.getElementById('total-label').innerText = isSip ? 'Fixed SIP Installment Amount' : 'Total Cost Calculation';
-                
-                const tInp = document.getElementById('stock-total');
-                if (isSip) {
-                    document.getElementById('stock-qty').value = ''; document.getElementById('stock-price').value = '';
-                    tInp.readOnly = false; tInp.classList.replace('bg-white', 'bg-slate-50');
-                } else {
-                    tInp.readOnly = true; tInp.classList.replace('bg-slate-50', 'bg-white');
-                    this.calcStockTotal();
-                }
-                this.populateStockDropdown();
-            },
-
-            populateStockDropdown() {
-                const action = document.getElementById('stock-action').value;
-                const details = DB.fetchUserRecords('stock_details').filter(d => d.type === action);
-                const sel = document.getElementById('stock-name');
-                sel.innerHTML = '<option value="" disabled selected>-- Choose Asset --</option>';
-                details.forEach(d => sel.innerHTML += `<option value="${d.name}" data-amount="${d.amount || ''}">${d.name}</option>`);
-                this.updateSipAmount();
-            },
-
-            updateSipAmount() {
-                const sel = document.getElementById('stock-name');
-                if(document.getElementById('stock-action').value === 'sip' && sel.selectedIndex > 0) {
-                    document.getElementById('stock-total').value = sel.options[sel.selectedIndex].getAttribute('data-amount');
-                }
-            },
-
-            calcStockTotal() {
-                if(document.getElementById('stock-action').value === 'sip') return;
-                const q = parseFloat(document.getElementById('stock-qty').value) || 0;
-                const p = parseFloat(document.getElementById('stock-price').value) || 0;
-                document.getElementById('stock-total').value = (q * p).toFixed(2);
-            },
-
-            saveStockTransaction() {
-                const type = document.querySelector('input[name="stock-trans-type"]:checked').value;
-                const action = document.getElementById('stock-action').value;
-                const name = document.getElementById('stock-name').value;
-                const date = document.getElementById('stock-date').value;
-                const total = parseFloat(document.getElementById('stock-total').value);
-
-                if(!name || !date || !total) return showToast('Please complete trade details.', 'error');
-
-                DB.insert('stock_market', { category: 'stock_market', date, type, action, name, total,
-                    qty: action === 'share' ? parseFloat(document.getElementById('stock-qty').value) : null,
-                    price: action === 'share' ? parseFloat(document.getElementById('stock-price').value) : null
-                });
-                
-                showToast('Portfolio Updated!');
-                document.getElementById('stock-qty').value = ''; document.getElementById('stock-price').value = ''; document.getElementById('stock-total').value = '';
-                this.switchStockTab('dash');
-            },
-
-            renderStockDashboard() {
-                let txs = DB.fetchUserRecords('stock_market');
-                const sDate = document.getElementById('filter-stock-start').value;
-                const eDate = document.getElementById('filter-stock-end').value;
-                if (sDate && eDate) txs = txs.filter(t => t.date >= sDate && t.date <= eDate);
-                txs.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                let net = 0, shVal = 0, sipVal = 0, cLbl = [], cDat = [];
-
-                txs.forEach(t => {
-                    const amt = t.type === 'buy' ? t.total : -t.total;
-                    net += amt;
-                    if(t.action === 'share') shVal += amt; if(t.action === 'sip') sipVal += amt;
-                    if(!cLbl.includes(t.date)) cLbl.push(t.date);
-                    cDat.push(net);
+                // Stock Form: Add to Registry
+                document.getElementById('form-stock-detail').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    showLoading(true);
+                    const type = document.getElementById('sd-type').value;
+                    const d = {
+                        id: generateId(),
+                        createdAt: new Date().toISOString(),
+                        userId: AppState.currentUser.id,
+                        type: type,
+                        name: document.getElementById('sd-name').value,
+                        amount: type === 'sip' ? parseFloat(document.getElementById('sd-amount').value) : null
+                    };
+                    await DB.addTransaction('stock_details', d);
+                    document.getElementById('form-stock-detail').reset();
+                    document.getElementById('sd-amount-container').classList.add('hidden');
+                    showToast('Asset added to registry!');
+                    this.renderStockView();
+                    showLoading(false);
                 });
 
-                document.getElementById('stock-dash-net').innerText = '₹' + formatMoney(net);
-                document.getElementById('stock-dash-shares').innerText = '₹' + formatMoney(shVal);
-                document.getElementById('stock-dash-sips').innerText = '₹' + formatMoney(sipVal);
+                // Stock Market form dynamic changes
+                const updateStockFormUI = async () => {
+                    const type = document.querySelector('input[name="stock-type"]:checked').value;
+                    const nameSelect = document.getElementById('stock-name');
+                    
+                    document.getElementById('stock-qty-group').classList.toggle('hidden', type === 'sip');
+                    document.getElementById('stock-price-group').classList.toggle('hidden', type === 'sip');
+                    document.getElementById('stock-total-group').classList.toggle('hidden', type !== 'sip');
+                    document.getElementById('calc-total-box').classList.toggle('hidden', type === 'sip');
+                    
+                    document.getElementById('stock-qty').required = (type === 'share');
+                    document.getElementById('stock-price').required = (type === 'share');
+                    
+                    // Populate select options based on type
+                    const details = await DB.getTransactions(AppState.currentUser.id, 'stock_details');
+                    const filtered = details.filter(d => d.type === type);
+                    
+                    nameSelect.innerHTML = '<option value="">Select from Registry...</option>';
+                    filtered.forEach(d => {
+                        nameSelect.innerHTML += `<option value="${d.name}" data-amount="${d.amount || 0}">${d.name}</option>`;
+                    });
 
-                this.createChart('chart-stock', cLbl, cDat, 'Portfolio Value', '#4f46e5');
+                    // Reset calc
+                    document.getElementById('stock-calculated-total').textContent = '₹0';
+                    document.getElementById('stock-total-amount').value = '';
+                };
 
-                const tbody = document.getElementById('stock-table-body'); tbody.innerHTML = '';
-                if(txs.length === 0) return tbody.innerHTML = `<tr><td colspan="4" class="px-5 py-10 text-center text-slate-400 text-sm">No activity found.</td></tr>`;
+                document.querySelectorAll('input[name="stock-type"]').forEach(r => r.addEventListener('change', updateStockFormUI));
+                
+                // Auto-fill SIP amount when selected
+                document.getElementById('stock-name').addEventListener('change', (e) => {
+                    const type = document.querySelector('input[name="stock-type"]:checked').value;
+                    if(type === 'sip') {
+                        const selectedOption = e.target.options[e.target.selectedIndex];
+                        const amt = selectedOption.getAttribute('data-amount');
+                        document.getElementById('stock-total-amount').value = amt || '';
+                    }
+                });
 
-                [...txs].reverse().forEach(t => {
-                    const isBuy = t.type === 'buy';
-                    const amountStr = (isBuy ? '+ ₹' : '- ₹') + formatMoney(t.total);
-                    const colorClass = isBuy ? 'text-indigo-700 bg-indigo-50' : 'text-amber-600 bg-amber-50';
-                    const det = t.action === 'share' ? `<span class="font-bold">${t.qty}</span> x ₹${t.price}` : 'Auto-SIP';
-                    const badge = t.action === 'share' ? '<span class="bg-blue-50 text-blue-600 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">Share</span>' : '<span class="bg-purple-50 text-purple-600 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">SIP</span>';
+                const calcTotal = () => {
+                    const type = document.querySelector('input[name="stock-type"]:checked').value;
+                    if (type === 'share') {
+                        const q = parseFloat(document.getElementById('stock-qty').value) || 0;
+                        const p = parseFloat(document.getElementById('stock-price').value) || 0;
+                        document.getElementById('stock-calculated-total').textContent = `₹${formatMoney(q * p)}`;
+                    }
+                };
+                document.getElementById('stock-qty').addEventListener('input', calcTotal);
+                document.getElementById('stock-price').addEventListener('input', calcTotal);
 
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
-                            <td class="px-5 py-4 whitespace-nowrap font-semibold text-slate-500 text-xs">${formatDate(t.date)}</td>
-                            <td class="px-5 py-4 font-bold text-slate-700 text-sm"><div class="flex items-center gap-2">${t.name} ${badge}</div></td>
-                            <td class="px-5 py-4 text-right text-slate-500 text-xs">${det}</td>
-                            <td class="px-5 py-4 text-right"><span class="inline-block px-2.5 py-1 rounded-lg font-bold text-xs ${colorClass}">${amountStr}</span></td>
-                        </tr>`;
+                // Stock Market Add Transaction
+                document.getElementById('form-stock').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    showLoading(true);
+                    const type = document.querySelector('input[name="stock-type"]:checked').value;
+                    const action = document.querySelector('input[name="stock-action"]:checked').value;
+                    let total = 0, qty = 0, price = 0;
+
+                    if (type === 'share') {
+                        qty = parseFloat(document.getElementById('stock-qty').value);
+                        price = parseFloat(document.getElementById('stock-price').value);
+                        total = qty * price;
+                    } else {
+                        total = parseFloat(document.getElementById('stock-total-amount').value);
+                    }
+
+                    const t = {
+                        id: generateId(),
+                        createdAt: new Date().toISOString(),
+                        userId: AppState.currentUser.id,
+                        category: 'stock_market',
+                        date: document.getElementById('stock-date').value,
+                        type, action, name: document.getElementById('stock-name').value, total, qty, price
+                    };
+
+                    await DB.addTransaction('stock_market', t);
+                    
+                    document.getElementById('stock-qty').value = '';
+                    document.getElementById('stock-price').value = '';
+                    document.getElementById('stock-calculated-total').textContent = '₹0';
+                    
+                    showToast('Investment transaction saved!');
+                    this.renderStockView();
+                    showLoading(false);
+                });
+
+                // Set default dates
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('cat-date').value = today;
+                document.getElementById('stock-date').value = today;
+            },
+
+            // --- Filters ---
+            bindFilters() {},
+            clearCategoryFilters() {
+                document.getElementById('cat-filter-start').value = '';
+                document.getElementById('cat-filter-end').value = '';
+                this.renderCategoryView();
+            },
+            clearStockFilters() {
+                document.getElementById('stock-filter-start').value = '';
+                document.getElementById('stock-filter-end').value = '';
+                this.renderStockView();
+            },
+            
+            // Filters data by date range
+            filterByDateRange(data, startId, endId) {
+                const start = document.getElementById(startId).value;
+                const end = document.getElementById(endId).value;
+                
+                if (!start && !end) return data;
+                
+                return data.filter(item => {
+                    const itemDate = new Date(item.date);
+                    itemDate.setHours(0,0,0,0);
+                    
+                    let passStart = true;
+                    let passEnd = true;
+                    
+                    if (start) {
+                        const sDate = new Date(start);
+                        sDate.setHours(0,0,0,0);
+                        passStart = itemDate >= sDate;
+                    }
+                    if (end) {
+                        const eDate = new Date(end);
+                        eDate.setHours(0,0,0,0);
+                        passEnd = itemDate <= eDate;
+                    }
+                    return passStart && passEnd;
                 });
             },
 
-            // --- Home & Chart Logic ---
-            renderHomeDashboard() {
-                const stockTxs = DB.fetchUserRecords('stock_market');
-                const bankTxs = DB.fetchUserRecords('bank');
-                const pocketTxs = DB.fetchUserRecords('personal_pocket');
-                const piggyTxs = DB.fetchUserRecords('piggy_bank');
+            // --- Rendering ---
+            async renderHome() {
+                const uid = AppState.currentUser.id;
+                const [bank, pocket, piggy, stock] = await Promise.all([
+                    DB.getTransactions(uid, 'bank'),
+                    DB.getTransactions(uid, 'personal_pocket'),
+                    DB.getTransactions(uid, 'piggy_bank'),
+                    DB.getTransactions(uid, 'stock_market')
+                ]);
+
+                const calcNet = (txs) => txs.reduce((sum, t) => t.type === 'in' ? sum + t.amount : sum - t.amount, 0);
+                const calcStock = (txs) => txs.reduce((sum, t) => t.action === 'buy' ? sum + t.total : sum - t.total, 0);
                 
-                let bals = { bank: 0, pocket: 0, piggy: 0, stock: 0 };
-                let sTotal = 0, sipTotal = 0;
-                
-                stockTxs.forEach(t => {
-                    const v = t.type === 'buy' ? t.total : -t.total;
-                    bals.stock += v;
-                    if(t.action === 'share') sTotal += v; if(t.action === 'sip') sipTotal += v;
+                const bTotal = calcNet(bank);
+                const pTotal = calcNet(pocket);
+                const pgTotal = calcNet(piggy);
+                const sTotal = calcStock(stock);
+
+                const netWorth = bTotal + pTotal + pgTotal + sTotal;
+
+                document.getElementById('total-net-worth').textContent = `₹${formatMoney(netWorth)}`;
+                document.getElementById('card-bank-total').textContent = `₹${formatMoney(bTotal)}`;
+                document.getElementById('card-pocket-total').textContent = `₹${formatMoney(pTotal)}`;
+                document.getElementById('card-piggy-total').textContent = `₹${formatMoney(pgTotal)}`;
+                document.getElementById('card-stock-total').textContent = `₹${formatMoney(sTotal)}`;
+
+                let inflows = 0; let outflows = 0;
+                [bank, pocket, piggy].forEach(arr => {
+                    arr.forEach(t => { if(t.type==='in') inflows+=t.amount; else outflows+=t.amount; });
                 });
-                bankTxs.forEach(t => bals.bank += (t.type === 'in' ? t.amount : -t.amount));
-                pocketTxs.forEach(t => bals.pocket += (t.type === 'in' ? t.amount : -t.amount));
-                piggyTxs.forEach(t => bals.piggy += (t.type === 'in' ? t.amount : -t.amount));
+                stock.forEach(t => { if(t.action==='sell') inflows+=t.total; else outflows+=t.total; });
 
-                const netWorth = Object.values(bals).reduce((a,b)=>a+b, 0);
-
-                document.getElementById('home-total-net').innerText = '₹' + formatMoney(netWorth);
-                document.getElementById('card-bal-bank').innerText = '₹' + formatMoney(bals.bank);
-                document.getElementById('card-bal-pocket').innerText = '₹' + formatMoney(bals.pocket);
-                document.getElementById('card-bal-piggy').innerText = '₹' + formatMoney(bals.piggy);
-                document.getElementById('card-bal-stock').innerText = '₹' + formatMoney(bals.stock);
-                document.getElementById('card-share-stock').innerText = `Sh: ₹${formatMoney(sTotal)}`;
-                document.getElementById('card-sip-stock').innerText = `SIP: ₹${formatMoney(sipTotal)}`;
-
-                let dSet = new Set();
-                [...stockTxs, ...bankTxs, ...pocketTxs, ...piggyTxs].forEach(t => dSet.add(t.date));
-                let sDates = Array.from(dSet).sort((a, b) => new Date(a) - new Date(b));
-
-                let rBk=0, rPkt=0, rPg=0, rStk=0, dBk=[], dPkt=[], dPg=[], dStk=[];
-
-                if(sDates.length === 0) sDates = [new Date().toISOString().split('T')[0]];
+                document.getElementById('total-inflows').textContent = `+ ₹${formatMoney(inflows)}`;
+                document.getElementById('total-outflows').textContent = `- ₹${formatMoney(outflows)}`;
                 
-                sDates.forEach(date => {
-                    bankTxs.filter(t => t.date === date).forEach(t => rBk += (t.type === 'in' ? t.amount : -t.amount));
-                    pocketTxs.filter(t => t.date === date).forEach(t => rPkt += (t.type === 'in' ? t.amount : -t.amount));
-                    piggyTxs.filter(t => t.date === date).forEach(t => rPg += (t.type === 'in' ? t.amount : -t.amount));
-                    stockTxs.filter(t => t.date === date).forEach(t => rStk += (t.type === 'buy' ? t.total : -t.total));
-                    dBk.push(rBk); dPkt.push(rPkt); dPg.push(rPg); dStk.push(rStk);
-                });
+                this.renderCombinedChart(bank, pocket, piggy, stock);
+            },
 
-                const ctx = document.getElementById('chart-home').getContext('2d');
-                if(AppState.homeChartInstance) AppState.homeChartInstance.destroy();
+            renderCombinedChart(bank, pocket, piggy, stock) {
+                const ctx = document.getElementById('combinedChart').getContext('2d');
+                if (AppState.charts['combined']) AppState.charts['combined'].destroy();
 
-                const cnf = { tension: 0.4, borderWidth: 3, pointRadius: 1, pointHoverRadius: 6, fill: false };
-                AppState.homeChartInstance = new Chart(ctx, {
+                let allDates = [...bank, ...pocket, ...piggy, ...stock].map(t => t.date);
+                allDates = [...new Set(allDates)].sort();
+
+                if(allDates.length === 0) return;
+
+                const buildData = (txs, isStock = false) => {
+                    let balance = 0;
+                    return allDates.map(date => {
+                        const dayTxs = txs.filter(t => t.date === date);
+                        dayTxs.forEach(t => {
+                            if(isStock) { balance += (t.action === 'buy' ? t.total : -t.total); }
+                            else { balance += (t.type === 'in' ? t.amount : -t.amount); }
+                        });
+                        return balance;
+                    });
+                };
+
+                AppState.charts['combined'] = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: sDates.map(d => formatDate(d)),
+                        labels: allDates,
                         datasets: [
-                            { ...cnf, label: 'Bank', data: dBk, borderColor: '#3b82f6' },
-                            { ...cnf, label: 'Pocket Wallet', data: dPkt, borderColor: '#10b981' },
-                            { ...cnf, label: 'Cash Vault', data: dPg, borderColor: '#ec4899' },
-                            { ...cnf, label: 'Portfolio', data: dStk, borderColor: '#6366f1' }
+                            { label: 'Bank', data: buildData(bank), borderColor: '#3b82f6', backgroundColor: '#3b82f620', fill: true, tension: 0.3 },
+                            { label: 'Pocket', data: buildData(pocket), borderColor: '#22c55e', backgroundColor: '#22c55e20', fill: true, tension: 0.3 },
+                            { label: 'Cash Vault', data: buildData(piggy), borderColor: '#ec4899', backgroundColor: '#ec489920', fill: true, tension: 0.3 },
+                            { label: 'Stock', data: buildData(stock, true), borderColor: '#6366f1', backgroundColor: '#6366f120', fill: true, tension: 0.3 }
                         ]
                     },
-                    options: {
-                        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                        plugins: { 
-                            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {family: 'Inter', weight: '600'} } },
-                            tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleFont: {family: 'Inter'}, bodyFont: {family: 'Inter'}, padding: 10, cornerRadius: 8 }
-                        },
-                        scales: { 
-                            y: { beginAtZero: true, min: 0, grid: { borderDash: [4,4], color: '#f1f5f9' }, border: {display: false} }, 
-                            x: { grid: { display: false }, border: {display: false} } 
-                        }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: { y: { min: 0 } }, 
+                        plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6 } } }
                     }
                 });
             },
 
-            createChart(canvasId, labels, dataPoints, labelName, colorName) {
-                const ctx = document.getElementById(canvasId).getContext('2d');
-                if (AppState.chartInstance) AppState.chartInstance.destroy();
+            async renderCategoryView() {
+                const cat = AppState.currentCategory;
+                const titles = { bank: 'Bank Account', personal_pocket: 'Personal Pocket', piggy_bank: 'Cash Vault' };
+                const icons = { bank: 'fa-building-columns', personal_pocket: 'fa-wallet', piggy_bank: 'fa-piggy-bank' };
+                
+                document.getElementById('cat-title').textContent = titles[cat];
+                document.getElementById('cat-icon').innerHTML = `<i class="fas ${icons[cat]}"></i>`;
 
-                AppState.chartInstance = new Chart(ctx, {
+                let rawData = await DB.getTransactions(AppState.currentUser.id, cat);
+                
+                const balance = rawData.reduce((sum, t) => t.type === 'in' ? sum + t.amount : sum - t.amount, 0);
+                document.getElementById('cat-balance').textContent = `₹${formatMoney(balance)}`;
+
+                let data = this.filterByDateRange(rawData, 'cat-filter-start', 'cat-filter-end');
+
+                const sortedDesc = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const tbody = document.getElementById('cat-history-list');
+                tbody.innerHTML = '';
+                
+                if (sortedDesc.length === 0) {
+                    document.getElementById('cat-empty-state').classList.remove('hidden');
+                } else {
+                    document.getElementById('cat-empty-state').classList.add('hidden');
+                    sortedDesc.forEach(t => {
+                        const isPos = t.type === 'in';
+                        const textId = 'desc-' + Math.random().toString(36).substr(2, 5);
+                        
+                        let descHtml = `<span id="${textId}" class="block truncate max-w-[150px] sm:max-w-xs transition-all duration-300">${t.desc}</span>`;
+                        let toggleHtml = '';
+                        if(t.desc.length > 25) {
+                            toggleHtml = `<button onclick="toggleDesc('${textId}')" class="text-xs text-indigo-500 hover:text-indigo-700 ml-1 flex-shrink-0"><i class="fas fa-chevron-down"></i></button>`;
+                        }
+
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50/50 transition">
+                                <td class="px-4 py-3 whitespace-nowrap text-gray-500">${t.date}</td>
+                                <td class="px-4 py-3 text-gray-800 flex items-start">
+                                    ${descHtml} ${toggleHtml}
+                                </td>
+                                <td class="px-4 py-3 text-right font-medium whitespace-nowrap ${isPos ? 'text-green-600' : 'text-red-600'}">
+                                    ${isPos ? '+' : '-'} ₹${formatMoney(t.amount)}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                const chartData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+                const dates = [...new Set(chartData.map(t => t.date))];
+                let runningBalance = 0;
+                
+                if(dates.length > 0) {
+                    const firstDate = dates[0];
+                    const previousData = rawData.filter(t => new Date(t.date) < new Date(firstDate));
+                    runningBalance = previousData.reduce((sum, t) => t.type === 'in' ? sum + t.amount : sum - t.amount, 0);
+                }
+
+                const balances = dates.map(date => {
+                    const dayTxs = chartData.filter(t => t.date === date);
+                    dayTxs.forEach(t => { runningBalance += (t.type === 'in' ? t.amount : -t.amount); });
+                    return runningBalance;
+                });
+
+                const ctx = document.getElementById('catChart').getContext('2d');
+                if (AppState.charts['cat']) AppState.charts['cat'].destroy();
+                AppState.charts['cat'] = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: labels.length ? labels.map(d=>formatDate(d)) : [formatDate(new Date())],
+                        labels: dates,
                         datasets: [{
-                            label: labelName, data: dataPoints.length ? dataPoints : [0],
-                            borderColor: colorName, backgroundColor: `${colorName}15`,
-                            fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0, pointHoverRadius: 6, pointBackgroundColor: colorName
+                            label: 'Balance',
+                            data: balances,
+                            borderColor: '#4f46e5',
+                            backgroundColor: '#4f46e510',
+                            fill: true,
+                            tension: 0.4
                         }]
                     },
-                    options: {
-                        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', padding: 10, cornerRadius: 8, titleFont: {family: 'Inter'}, bodyFont: {family: 'Inter'} } },
-                        scales: { 
-                            y: { beginAtZero: true, min: 0, grid: { borderDash: [4,4], color: '#f1f5f9' }, border: {display: false} }, 
-                            x: { grid: { display: false }, border: {display: false} } 
-                        }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: { y: { min: 0 } }, 
+                        plugins: { legend: { display: false } }
                     }
                 });
+            },
+
+            async renderStockView() {
+                const uid = AppState.currentUser.id;
+                const details = await DB.getTransactions(uid, 'stock_details');
+                const shares = details.filter(d => d.type === 'share');
+                const sips = details.filter(d => d.type === 'sip');
+                
+                const ulShares = document.getElementById('sd-list-shares');
+                const ulSips = document.getElementById('sd-list-sips');
+                ulShares.innerHTML = shares.length ? '' : '<li class="text-sm text-gray-400 italic">No shares added</li>';
+                ulSips.innerHTML = sips.length ? '' : '<li class="text-sm text-gray-400 italic">No SIPs added</li>';
+                
+                shares.forEach(d => ulShares.innerHTML += `<li class="flex items-center gap-2 text-sm text-gray-700"><i class="fas fa-caret-right text-gray-300"></i> ${d.name}</li>`);
+                sips.forEach(d => ulSips.innerHTML += `<li class="flex items-center gap-2 text-sm text-gray-700 justify-between"><span><i class="fas fa-caret-right text-gray-300 mr-2"></i>${d.name}</span> <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-medium">₹${formatMoney(d.amount)}</span></li>`);
+
+                document.querySelector('input[name="stock-type"]:checked').dispatchEvent(new Event('change'));
+
+                let rawData = await DB.getTransactions(uid, 'stock_market');
+                const totalInv = rawData.reduce((sum, t) => t.action === 'buy' ? sum + t.total : sum - t.total, 0);
+                document.getElementById('stock-total-invested').textContent = `₹${formatMoney(totalInv)}`;
+
+                let data = this.filterByDateRange(rawData, 'stock-filter-start', 'stock-filter-end');
+
+                const cardContainer = document.getElementById('stock-asset-cards');
+                cardContainer.innerHTML = '';
+                const uniqueAssets = [...new Set(rawData.map(t => t.name))];
+                
+                uniqueAssets.forEach(assetName => {
+                    const assetTxs = rawData.filter(t => t.name === assetName);
+                    const type = assetTxs[0].type; 
+                    const amt = assetTxs.reduce((sum, t) => t.action === 'buy' ? sum + t.total : sum - t.total, 0);
+                    if(amt > 0) {
+                        cardContainer.innerHTML += `
+                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col justify-between">
+                                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">${type}</span>
+                                <h4 class="text-gray-800 font-medium truncate" title="${assetName}">${assetName}</h4>
+                                <p class="text-indigo-600 font-semibold mt-2">₹${formatMoney(amt)}</p>
+                            </div>
+                        `;
+                    }
+                });
+
+                const sortedDesc = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const tbody = document.getElementById('stock-history-list');
+                tbody.innerHTML = '';
+                
+                if (sortedDesc.length === 0) {
+                    document.getElementById('stock-empty-state').classList.remove('hidden');
+                } else {
+                    document.getElementById('stock-empty-state').classList.add('hidden');
+                    sortedDesc.forEach(t => {
+                        const isBuy = t.action === 'buy';
+                        const qtyStr = t.type === 'share' ? `${t.qty} × ₹${t.price}` : '-';
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50/50 transition">
+                                <td class="px-4 py-3 whitespace-nowrap text-gray-500">${t.date}</td>
+                                <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs font-medium uppercase ${t.type==='share'?'bg-blue-50 text-blue-600':'bg-purple-50 text-purple-600'}">${t.type}</span></td>
+                                <td class="px-4 py-3 text-gray-800 font-medium">${t.name}</td>
+                                <td class="px-4 py-3 text-center"><span class="${isBuy ? 'text-green-600' : 'text-red-600'} font-medium capitalize">${t.action}</span></td>
+                                <td class="px-4 py-3 text-right text-gray-500">${qtyStr}</td>
+                                <td class="px-4 py-3 text-right font-medium text-gray-900">₹${formatMoney(t.total)}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                const renderStockChart = (canvasId, type) => {
+                    const txs = data.filter(t => t.type === type).sort((a, b) => new Date(a.date) - new Date(b.date));
+                    const dates = [...new Set(txs.map(t => t.date))];
+                    
+                    let running = 0;
+                    if(dates.length > 0) {
+                        const firstDate = dates[0];
+                        const previousData = rawData.filter(t => t.type === type && new Date(t.date) < new Date(firstDate));
+                        running = previousData.reduce((sum, t) => t.action === 'buy' ? sum + t.total : sum - t.total, 0);
+                    }
+
+                    const totals = dates.map(date => {
+                        const dayTxs = txs.filter(t => t.date === date);
+                        dayTxs.forEach(t => { running += (t.action === 'buy' ? t.total : -t.total); });
+                        return running;
+                    });
+
+                    const ctx = document.getElementById(canvasId).getContext('2d');
+                    if (AppState.charts[canvasId]) AppState.charts[canvasId].destroy();
+                    
+                    const color = type === 'share' ? '#3b82f6' : '#8b5cf6';
+                    
+                    AppState.charts[canvasId] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dates,
+                            datasets: [{ label: 'Invested', data: totals, borderColor: color, backgroundColor: color+'10', fill: true, tension: 0.3 }]
+                        },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            scales: { y: { min: 0 } },
+                            plugins: { legend: { display: false } } 
+                        }
+                    });
+                };
+
+                renderStockChart('stockShareChart', 'share');
+                renderStockChart('stockSipChart', 'sip');
             }
         };
 
-        window.onload = () => App.init();
+        // Initialize App on load
+        document.addEventListener('DOMContentLoaded', () => App.init());
+
     </script>
 </body>
 </html>
